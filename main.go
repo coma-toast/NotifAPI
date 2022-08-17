@@ -1,43 +1,27 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/coma-toast/notifapi/utils"
-	pushnotifications "github.com/pusher/push-notifications-go"
+	"github.com/coma-toast/notifapi/internal/utils"
+	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/coma-toast/notifapi/pkg/pusher"
 )
 
+type App struct {
+	Config   utils.Config
+	Data     utils.DataModel
+	Logger   utils.Logger
+	Notifier notification.Notifier
+}
+
 func main() {
-	config := utils.GetConf()
-	beamsClient, _ := pushnotifications.New(config.InstanceID, config.SecretKey)
+	app := App{}
 
-	publishRequest := map[string]interface{}{
-		"apns": map[string]interface{}{
-			"aps": map[string]interface{}{
-				"alert": map[string]interface{}{
-					"title": "Hello",
-					"body":  "Hello, world",
-				},
-			},
-		},
-		"fcm": map[string]interface{}{
-			"notification": map[string]interface{}{
-				"title": "Hello",
-				"body":  "Hello, world",
-			},
-		},
-		"web": map[string]interface{}{
-			"notification": map[string]interface{}{
-				"title": "Hello",
-				"body":  "Hello, world",
-			},
-		},
-	}
+	app.Config = *utils.GetConf()
+	app.Logger.Init(false)
+	app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey}
+	app.Logger.Info("App initialized")
+	app.Data.Init(app.Config.DBFilePath)
+	// go run API
+	// go run HTTP
 
-	pubId, err := beamsClient.PublishToInterests([]string{"hello"}, publishRequest)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("Publish Id:", pubId)
-	}
 }
