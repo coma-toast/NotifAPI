@@ -1,5 +1,5 @@
 package notification
 
 type Notifier interface {
-	SendMessage(category, title, message string) error
+	SendMessage(interests []string, title, message, link string, metadata map[string]interface{}) error
 }
