@@ -21,6 +21,10 @@ func main() {
 	app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey}
 	app.Logger.Info("App initialized")
 	app.Data.Init(app.Config.DBFilePath)
+	data := map[string]interface{}{
+		"test data": "asdf",
+	}
+	app.Notifier.SendMessage([]string{"hello"}, "Test notification", "This is a test", "", data)
 	// go run API
 	// go run HTTP
 
