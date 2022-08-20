@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/coma-toast/notifapi/internal/utils"
 	pushnotifications "github.com/pusher/push-notifications-go"
 )
 
 type Pusher struct {
 	InstanceID string
 	SecretKey  string
+	Data       *utils.DataModel
 }
 
 type MessageData struct {
@@ -58,24 +60,35 @@ func (p Pusher) convertRequest(request Request) (map[string]interface{}, error) 
 	return m, nil
 }
 
-func (p Pusher) SendMessage(interests []string, title, body, link string, metadata map[string]interface{}) error {
+func (p Pusher) SendMessage(interests []string, title, body, source string) (string, error) {
+	metadata := make(map[string]interface{})
+	link := ""
+	return p.SendMessageFull(interests, title, body, link, source, metadata)
+}
+
+func (p Pusher) SendMessageWithLink(interests []string, title, body, link, source string) (string, error) {
+	metadata := make(map[string]interface{})
+	return p.SendMessageFull(interests, title, body, link, source, metadata)
+}
+
+func (p Pusher) SendMessageFull(interests []string, title, body, link, source string, metadata map[string]interface{}) (string, error) {
 	beamsClient, _ := pushnotifications.New(p.InstanceID, p.SecretKey)
 
 	request := p.buildRequest(title, body, link, metadata)
 	publishRequest, err := p.convertRequest(request)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	pubId, err := beamsClient.PublishToInterests(interests, publishRequest)
 	if err != nil {
 		fmt.Println(err)
-		return err
-	} else {
-		fmt.Println("Publish Id:", pubId)
+		return "", err
 	}
 
-	return nil
+	p.Data.AddNotification(pubId, source, title, body, interests, metadata)
+
+	return pubId, nil
 }
 
 func (p Pusher) CreateInterest(name string) error {

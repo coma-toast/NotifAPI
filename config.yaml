@@ -1,0 +1,6 @@
+devmode: false
+instanceid: 6e482588-a9a1-45a9-b786-2d367fc69eef
+logfilepath: ./logs/
+dbfilepath: ./db
+port: 10887
+secretkey: CC61ABEC8EE92FCBA5ED90E3CA8DA4B723A167AEBFA93D240022F31E50BE571D
