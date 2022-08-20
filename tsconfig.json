@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "outDir": "static",
+        "module": "es2015",
+        "moduleResolution": "node",
+        "target": "ES6",
+        "baseUrl": "./static",
+        "lib": ["ESNext", "DOM", "DOM.Iterable"]
+    },
+    "include": ["typescript/**/*"]
+}
