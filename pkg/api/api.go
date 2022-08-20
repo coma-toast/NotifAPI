@@ -67,7 +67,7 @@ func getIP(r *http.Request) (string, error) {
 	if netIP != nil {
 		return ip, nil
 	}
-	return "", fmt.Errorf("No valid ip found")
+	return "", fmt.Errorf("no valid ip found")
 }
 
 func (api *API) respondWithError(w http.ResponseWriter, code int, message string) {
