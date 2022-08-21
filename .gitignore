@@ -1,3 +1,4 @@
 db/data.db
 config.yaml
 notifapi
+node_modules

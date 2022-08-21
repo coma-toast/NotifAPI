@@ -6,6 +6,8 @@ import (
 	"github.com/coma-toast/notifapi/internal/utils"
 	"github.com/coma-toast/notifapi/pkg/api"
 	"github.com/coma-toast/notifapi/pkg/app"
+	"github.com/coma-toast/notifapi/pkg/client"
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/coma-toast/notifapi/pkg/pusher"
 )
 
@@ -29,6 +31,15 @@ func main() {
 
 	api := api.API{App: &app}
 
-	api.RunAPI()
+	go api.RunAPI()
 
+	client := client.Client{Target: "127.0.0.1:10887"}
+	message := notification.Message{
+		Interests: []string{"hello", "test"},
+		Title:     "Test from client",
+		Body:      "This is a test from the client",
+		Source:    "main.go",
+	}
+
+	client.SendMessage(message)
 }

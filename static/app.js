@@ -1,10 +1,13 @@
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
+const configFile = fs.readFileSync("../config.yaml");
+const config = yaml.load(configFile);
 // @ts-ignore
 const beamsClient = new PusherPushNotifications.Client({
-    instanceId: "6e482588-a9a1-45a9-b786-2d367fc69eef"
+    instanceId: config.instanceid
 });
 beamsClient
     .start()
-    // .then(() => beamsClient.addDeviceInterest('hello'))
     .then(() => console.log("Successfully registered and subscribed!"))
     .catch(console.error);
 let list = document.getElementById("interest-list");
