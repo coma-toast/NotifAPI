@@ -7,7 +7,6 @@ A simple API to receive data and send push notifications to multiple devices via
 
 -   Send messages from all your various systems and services to all of your devices via API call
 -   Logging of all alerts to a SQLite DB
--
 
 ## Installation
 
