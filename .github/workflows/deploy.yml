@@ -16,7 +16,7 @@ jobs:
                   password: ${{ secrets.PASSWORD }}
                   key: ${{ secrets.KEY }}
                   script: |
-                      cd ~/git/notifapi
+                      cd ${{ secrets.DEPLOY_PATH}}
                       git pull
                       go build
                       sudo service notifapi restart
