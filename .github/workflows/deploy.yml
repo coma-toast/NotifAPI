@@ -1,0 +1,20 @@
+name: Deploy to Production
+on:
+    push:
+        branches:
+            - master
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: ssh deployment
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.HOST }}
+                  username: ${{ secrets.USERNAME }}
+                  key: ${{ secrets.KEY }}
+                  script: |
+                      cd ~/git/notifapi
+                      git pull
+                      go build
+                      sudo service notifapi restart
