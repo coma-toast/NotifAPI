@@ -1,5 +1,6 @@
 # NotifAPI
 
+[![Deploy to Production](https://github.com/coma-toast/NotifAPI/actions/workflows/deploy.yml/badge.svg)](https://github.com/coma-toast/NotifAPI/actions/workflows/deploy.yml)  
 A simple API to receive data and send push notifications to multiple devices via [Pusher](https://pusher.com)
 
 ## Features
