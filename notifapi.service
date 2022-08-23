@@ -1,0 +1,15 @@
+[Unit]
+Description=NotifAPI
+After=network.target
+
+[Service]
+Type=simple
+# user you want this to run as
+User=jason
+ExecStart=/home/jason/scripts/notifapi.sh
+TimeoutStartSec=0
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

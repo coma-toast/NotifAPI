@@ -23,12 +23,11 @@ func GetConf() *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.SetDefault("LogFilePath", "./logs/")
+	viper.SetDefault("DBFilePath", "./db")
 	viper.SetDefault("InstanceID", "")
 	viper.SetDefault("SecretKey", "")
 	viper.SetDefault("Port", "")
 	viper.SetDefault("DevMode", false)
-
-	err := viper.ReadInConfig()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -44,7 +43,7 @@ func GetConf() *Config {
 	}
 
 	conf := &Config{}
-	err = viper.Unmarshal(conf)
+	err := viper.Unmarshal(conf)
 
 	if err != nil {
 		panic(err)
