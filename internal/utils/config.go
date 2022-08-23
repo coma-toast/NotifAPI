@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -51,6 +52,11 @@ func GetConf() *Config {
 
 	if _, err := os.Stat(conf.LogFilePath); os.IsNotExist(err) {
 		os.Mkdir(conf.LogFilePath, 0777)
+	}
+
+	if conf.InstanceID == "" {
+		fmt.Println("Please fill out configuration values in config.yaml")
+		os.Exit(0)
 	}
 
 	return conf

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/coma-toast/notifapi/internal/utils"
 	"github.com/coma-toast/notifapi/pkg/api"
@@ -33,13 +35,23 @@ func main() {
 
 	go api.RunAPI()
 
-	client := client.Client{Target: "127.0.0.1:10887"}
+	//* dev code
+	time.Sleep(time.Second * 5)
+	client := client.Client{Target: "http://127.0.0.1:10887"}
 	message := notification.Message{
-		Interests: []string{"hello", "test"},
+		Interests: []string{"hello"},
 		Title:     "Test from client",
 		Body:      "This is a test from the client",
 		Source:    "main.go",
 	}
 
-	client.SendMessage(message)
+	response, err := client.SendMessage(message)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(response.Status)
+	fmt.Println("message sent")
+	dontExit := make(chan bool)
+	// Waiting for a channel that never comes...
+	<-dontExit
 }
