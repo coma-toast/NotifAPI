@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -16,7 +17,10 @@ import (
 func main() {
 	app := app.App{}
 
-	app.Config = *utils.GetConf()
+	configPath := flag.String("conf", ".", "Path for the config file.")
+	flag.Parse()
+
+	app.Config = *utils.GetConf(*configPath)
 	app.Logger.Init(false)
 	app.Logger.Info("App initialized")
 	app.Data.Init(app.Config.DBFilePath)

@@ -18,8 +18,8 @@ type Config struct {
 	DevMode     bool
 }
 
-func GetConf() *Config {
-	viper.AddConfigPath(".")
+func GetConf(path string) *Config {
+	viper.AddConfigPath(path)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.SetDefault("LogFilePath", "./logs/")

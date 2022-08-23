@@ -1,2 +1,2 @@
 #!/bin/bash
-/home/jason/git/notifapi/notifapi
+/home/jason/git/NotifAPI/notifapi
