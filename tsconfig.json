@@ -1,11 +1,11 @@
 {
     "compilerOptions": {
-        "outDir": "static",
+        "outDir": "notifapi-react/public/static",
         "module": "es2015",
         "moduleResolution": "node",
         "target": "ES6",
-        "baseUrl": "./static",
+        "baseUrl": "notifapi-react/public/static",
         "lib": ["ESNext", "DOM", "DOM.Iterable"]
     },
-    "include": ["typescript/**/*"]
+    "include": ["typescript/**/*", "typescript/service-worker2.ts"]
 }

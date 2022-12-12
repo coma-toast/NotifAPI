@@ -26,11 +26,11 @@ func main() {
 	}
 	app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data}
 	// * re-enable when back online
-	// id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "main.go")
+	id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "main.go")
 	if err != nil {
 		app.Logger.ErrorWithField("Error sending message", "interest", "hello")
 	}
-	id := hostname
+	// id := hostname
 	app.Logger.Debug(id)
 
 	api := api.API{App: &app}
