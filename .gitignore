@@ -2,3 +2,5 @@ db/data.db
 config.yaml
 notifapi
 node_modules
+notifapi-react/.parcel-cache/
+notifapi-react/dist/

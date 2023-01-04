@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -13,11 +14,23 @@ import (
 
 	"github.com/coma-toast/notifapi/pkg/app"
 	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
+	"github.com/kyberbits/forge/forge"
 )
 
 type API struct {
 	App *app.App
+}
+
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
 }
 
 type JSONResponse struct {
@@ -35,8 +48,20 @@ func (api *API) RunAPI() {
 	r.HandleFunc("/api/notify", api.NotifyHandler).Methods(http.MethodPost)
 	r.HandleFunc("/api/history/{date}", api.HistoryHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/recent/{limit}", api.RecentHandler).Methods(http.MethodGet)
+	r.Use()
 
-	spa := spaHandler{staticPath: "./notifapi-react/build", indexPath: "./notifapi-react/public/index.html"}
+	spa := &forge.HTTPStatic{
+		FileSystem: http.FS(os.DirFS("./notifapi-react/dist")),
+		NotFoundHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			file, err := os.Open("./notifapi-react/dist/index.html")
+			if err != nil {
+				panic(err)
+			}
+
+			io.Copy(w, file)
+		}),
+	}
+	// spa := spaHandler{staticPath: "./notifapi-react/dist", indexPath: "./notifapi-react/dist/index.html"}
 	r.PathPrefix("/").Handler(spa)
 
 	// Serve static files
@@ -48,6 +73,20 @@ func (api *API) RunAPI() {
 	r.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir(cwd))))
 	api.App.Logger.Error(http.ListenAndServe(fmt.Sprintf(":%s", api.App.Config.Port), r))
 }
+
+// func authMiddleware(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+// 		claims := &Claims{}
+
+// 		err := api.validateUserToken(claims, w, r)
+// 		if err != nil {
+// 			api.env.Logger.LogError("error validating user", claims.Username, err)
+// 		}
+// 		// Call the next handler, which can be another middleware in the chain, or the final handler.
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 // spaHandler implements the http.Handler interface, so we can use it
 // to respond to HTTP requests. The path to the static directory and
@@ -140,6 +179,39 @@ func (api *API) respondWithJSON(w http.ResponseWriter, code int, payload interfa
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+func (api *API) validateUserToken(claims *Claims, w http.ResponseWriter, r *http.Request) error {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+
+		return fmt.Errorf("Error getting cookie")
+	}
+
+	tokenString := cookie.Value
+
+	token, err := jwt.ParseWithClaims(tokenString, claims,
+		func(t *jwt.Token) (interface{}, error) {
+			return []byte(api.App.Config.JWTKey), nil
+		})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return err
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return err
+	}
+
+	if !token.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return err
+	}
+
+	return nil
 }
 
 func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {

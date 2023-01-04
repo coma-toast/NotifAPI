@@ -11,6 +11,8 @@ import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
+import LogoSquare from "../static/LogoSquare.png";
+import Logo from "../static/Logo.png";
 
 const pages = ["History", "Interests", "Config"];
 const settings = ["Profile", "Account", "Dashboard", "Logout"];
@@ -45,7 +47,7 @@ const ResponsiveAppBar = () => {
                     <Link to={"/"}>
                         <Box
                             component="img"
-                            src="/static/LogoSquare.png"
+                            src={LogoSquare}
                             className="App-logo-icon"
                             alt="Logo Icon"
                             sx={{
@@ -88,9 +90,9 @@ const ResponsiveAppBar = () => {
                                 display: { xs: "block", md: "none" }
                             }}
                         >
-                            {pages.map((page) => (
+                            {pages.map((page, index) => (
                                 <MenuItem
-                                    key={page}
+                                    key={index}
                                     onClick={handleCloseNavMenu}
                                 >
                                     <Typography textAlign="center">
@@ -112,7 +114,6 @@ const ResponsiveAppBar = () => {
                         variant="h5"
                         noWrap
                         component="a"
-                        href=""
                         sx={{
                             mr: 2,
                             display: { xs: "flex", md: "none" },
@@ -128,7 +129,7 @@ const ResponsiveAppBar = () => {
                             <Box
                                 component="img"
                                 alt="NotifAPI"
-                                src="/static/Logo.png"
+                                src={Logo}
                                 className="App-logo"
                             />
                         </Link>
@@ -139,17 +140,19 @@ const ResponsiveAppBar = () => {
                             display: { xs: "none", md: "flex" }
                         }}
                     >
-                        {pages.map((page) => (
-                            <Link
-                                to={`/${page}`}
-                                style={{
-                                    textDecoration: "none",
-                                    color: "white",
-                                    padding: "10px"
-                                }}
-                            >
-                                {page}
-                            </Link>
+                        {pages.map((page, index) => (
+                            <div key={index}>
+                                <Link
+                                    to={`/${page}`}
+                                    style={{
+                                        textDecoration: "none",
+                                        color: "white",
+                                        padding: "10px"
+                                    }}
+                                >
+                                    {page}
+                                </Link>
+                            </div>
                         ))}
                     </Box>
 
@@ -183,9 +186,9 @@ const ResponsiveAppBar = () => {
                             open={Boolean(anchorElUser)}
                             onClose={handleCloseUserMenu}
                         >
-                            {settings.map((setting) => (
+                            {settings.map((setting, index) => (
                                 <MenuItem
-                                    key={setting}
+                                    key={index}
                                     onClick={handleCloseUserMenu}
                                 >
                                     <Typography textAlign="center">

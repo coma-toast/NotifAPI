@@ -27,16 +27,16 @@ type NotificationRow struct {
 }
 
 type UserRow struct {
-	id                string `db:"id" json:"id"`
-	date_added        string `db:"date_added" json:"date_added"`
-	date_updated      string `db:"date_updated" json:"date_updated"`
-	username          string `db:"username" json:"username"`
-	is_admin          string `db:"is_admin" json:"is_admin"`
-	password          string `db:"password" json:"password"`
-	first_name        string `db:"first_name" json:"first_name"`
-	last_name         string `db:"last_name" json:"last_name"`
-	email             string `db:"email" json:"email"`
-	account_confirmed string `db:"account_confirmed" json:"account_confirmed"`
+	Id                string `db:"id" json:"id"`
+	Date_added        string `db:"date_added" json:"date_added"`
+	Date_updated      string `db:"date_updated" json:"date_updated"`
+	Username          string `db:"username" json:"username"`
+	Is_admin          string `db:"is_admin" json:"is_admin"`
+	Password          string `db:"password" json:"password"`
+	First_name        string `db:"first_name" json:"first_name"`
+	Last_name         string `db:"last_name" json:"last_name"`
+	Email             string `db:"email" json:"email"`
+	Account_confirmed string `db:"account_confirmed" json:"account_confirmed"`
 }
 
 func (d *DataModel) Init(location string) {

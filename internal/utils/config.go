@@ -14,6 +14,7 @@ type Config struct {
 	DBFilePath  string
 	InstanceID  string
 	SecretKey   string
+	JWTKey      string
 	Port        string
 	DevMode     bool
 }

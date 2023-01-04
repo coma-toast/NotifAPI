@@ -16,8 +16,8 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-        "outDir": "public"
+        "outDir": "./public"
     },
-    "files": ["src/service-worker.ts"]
-    // "include": ["src", "public/static"]
+    "files": ["src/service-worker.ts"],
+    "include": ["src", "src/static"]
 }
