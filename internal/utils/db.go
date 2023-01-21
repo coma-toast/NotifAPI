@@ -75,6 +75,18 @@ func (d *DataModel) Init(location string) {
 
 	d.DB.MustExec(users)
 	fmt.Println("DB Initialized: users")
+
+	interests := `CREATE TABLE IF NOT EXISTS interests (
+		id INTEGER PRIMARY KEY,
+		date_added TEXT DEFAULT CURRENT_TIMESTAMP,
+		date_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+		userid TEXT NOT NULL,
+		interest TEXT NOT NULL,
+		webhook TEXT NOT NULL
+		)`
+
+	d.DB.MustExec(interests)
+	fmt.Println("DB Initialized: interests")
 }
 
 func (d *DataModel) AddNotification(pubID, source, title, message string, interests []string, metadata map[string]interface{}) (sql.Result, error) {
