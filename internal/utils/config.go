@@ -10,13 +10,14 @@ import (
 
 // config is the configuration struct
 type Config struct {
-	LogFilePath string
-	DBFilePath  string
-	InstanceID  string
-	SecretKey   string
-	JWTKey      string
-	Port        string
-	DevMode     bool
+	LogFilePath    string
+	DBFilePath     string
+	InstanceID     string
+	SecretKey      string
+	JWTKey         string
+	DiscordWebhook string
+	Port           string
+	DevMode        bool
 }
 
 func GetConf(path string) *Config {
@@ -27,6 +28,7 @@ func GetConf(path string) *Config {
 	viper.SetDefault("DBFilePath", "./db")
 	viper.SetDefault("InstanceID", "")
 	viper.SetDefault("SecretKey", "")
+	viper.SetDefault("DiscordWebhook", "")
 	viper.SetDefault("Port", "")
 	viper.SetDefault("DevMode", false)
 

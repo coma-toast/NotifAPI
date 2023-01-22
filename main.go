@@ -7,6 +7,8 @@ import (
 	"github.com/coma-toast/notifapi/internal/utils"
 	"github.com/coma-toast/notifapi/pkg/api"
 	"github.com/coma-toast/notifapi/pkg/app"
+	"github.com/coma-toast/notifapi/pkg/discord"
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/coma-toast/notifapi/pkg/pusher"
 )
 
@@ -24,14 +26,14 @@ func main() {
 	if err != nil {
 		app.Logger.Error(err)
 	}
-	app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data}
-	// * re-enable when back online
-	id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "main.go")
-	if err != nil {
-		app.Logger.ErrorWithField("Error sending message", "interest", "hello")
+
+	app.NotifierTargets = []notification.Notifier{
+		pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data},
+		discord.Discord{URL: app.Config.DiscordWebhook, Data: &app.Data},
 	}
-	// id := hostname
-	app.Logger.Debug(id)
+	// * re-enable when back online
+	ids, errors := app.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "", "main.go", nil)
+	app.Logger.ProcessSendMessageResults(ids, errors)
 
 	api := api.API{App: &app}
 

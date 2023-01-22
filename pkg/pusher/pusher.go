@@ -41,7 +41,10 @@ type Request struct {
 }
 
 func (p Pusher) buildRequest(title, body, link string, metadata map[string]interface{}) Request {
-	message := MessageData{Title: title, Body: body, DeepLink: link}
+	message := MessageData{Title: title, Body: body}
+	if link != "" {
+		message.DeepLink = link
+	}
 	request := Request{
 		APNS: APSData{APS: AlertData{Alert: message, MetaData: metadata}},
 		FCM:  NotificationData{Notification: message, MetaData: metadata},
@@ -90,7 +93,7 @@ func (p Pusher) SendMessageFull(interests []string, title, body, link, source st
 		return "", err
 	}
 
-	p.Data.AddNotification(pubId, source, title, body, interests, metadata)
+	p.Data.AddNotification(pubId, source, "pusher", title, body, interests, metadata)
 
 	return pubId, nil
 }

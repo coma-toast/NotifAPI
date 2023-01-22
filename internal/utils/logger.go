@@ -46,3 +46,14 @@ func (l *Logger) Error(err error) {
 func (l *Logger) ErrorWithField(message, field, value string) {
 	l.logger.WithField(field, value).Error(message)
 }
+
+func (l *Logger) ProcessSendMessageResults(ids []string, errors []error) {
+	if len(errors) > 0 {
+		for _, e := range errors {
+			l.ErrorWithField("Error sending message", "error", e.Error())
+		}
+	}
+	for _, id := range ids {
+		l.Debug(id)
+	}
+}

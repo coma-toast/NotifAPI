@@ -17,13 +17,14 @@ type DataModel struct {
 }
 
 type NotificationRow struct {
-	PubID     string `db:"pub_id" json:"pub_id"`
-	Date      string `db:"date" json:"date"`
-	Source    string `db:"source" json:"source"`
-	Interests string `db:"interests" json:"interests"`
-	Title     string `db:"title" json:"title"`
-	Message   string `db:"message" json:"message"`
-	Metadata  string `db:"metadata" json:"metadata"`
+	PubID       string `db:"pub_id" json:"pub_id"`
+	Date        string `db:"date" json:"date"`
+	Source      string `db:"source" json:"source"`
+	Destination string `db:"destination" json:"destination"`
+	Interests   string `db:"interests" json:"interests"`
+	Title       string `db:"title" json:"title"`
+	Message     string `db:"message" json:"message"`
+	Metadata    string `db:"metadata" json:"metadata"`
 }
 
 type UserRow struct {
@@ -39,6 +40,15 @@ type UserRow struct {
 	Account_confirmed string `db:"account_confirmed" json:"account_confirmed"`
 }
 
+type InterestRow struct {
+	Id           string `db:"id" json:"id"`
+	Date_added   string `db:"date_added" json:"date_added"`
+	Date_updated string `db:"date_updated" json:"date_updated"`
+	UserID       string `db:"userid" json:"userid"`
+	Interest     string `db:"interest" json:"interest"`
+	Webhook      string `db:"webhook" json:"webhook"`
+}
+
 func (d *DataModel) Init(location string) {
 	err := os.MkdirAll(location, os.ModePerm)
 	if err != nil {
@@ -51,6 +61,7 @@ func (d *DataModel) Init(location string) {
 		pub_id text PRIMARY KEY,
 		date TEXT DEFAULT CURRENT_TIMESTAMP,
 		source TEXT,
+		destination TEXT,
 		interests TEXT,
 		title TEXT,
 		message TEXT,
@@ -89,11 +100,12 @@ func (d *DataModel) Init(location string) {
 	fmt.Println("DB Initialized: interests")
 }
 
-func (d *DataModel) AddNotification(pubID, source, title, message string, interests []string, metadata map[string]interface{}) (sql.Result, error) {
+func (d *DataModel) AddNotification(pubID, source, destination, title, message string, interests []string, metadata map[string]interface{}) (sql.Result, error) {
 	insert := `INSERT INTO notifications 
 	(
 		pub_id,
 		source,
+		destination,
 		interests,
 		title,
 		message,
@@ -101,6 +113,7 @@ func (d *DataModel) AddNotification(pubID, source, title, message string, intere
 	)
 	VALUES 
 	(
+		?,
 		?,
 		?,
 		?,
@@ -119,7 +132,7 @@ func (d *DataModel) AddNotification(pubID, source, title, message string, intere
 		return nil, err
 	}
 
-	return d.DB.Exec(insert, pubID, source, jsonInterests, title, message, jsonMetadata)
+	return d.DB.Exec(insert, pubID, source, destination, jsonInterests, title, message, jsonMetadata)
 }
 
 func (d *DataModel) GetRecentNotifications(limit int) ([]NotificationRow, error) {
@@ -144,8 +157,8 @@ func (d *DataModel) GetRecentNotifications(limit int) ([]NotificationRow, error)
 func (d *DataModel) GetHistory(date time.Time) ([]NotificationRow, error) {
 	notifications := make([]NotificationRow, 0)
 	statement := `SELECT * FROM notifications WHERE date > ? ORDER BY date`
-	test := date.Format("2006-01-02 15:04:05")
-	fmt.Println(test)
+	// test := date.Format("2006-01-02 15:04:05")
+	// fmt.Println(test)
 	rows, err := d.DB.Queryx(statement, date.String())
 	if err != nil {
 		return nil, err
@@ -160,4 +173,8 @@ func (d *DataModel) GetHistory(date time.Time) ([]NotificationRow, error) {
 	}
 
 	return notifications, nil
+}
+
+func (d *DataModel) GetInterestByName(name string) (InterestRow, error) {
+	statement := `SELECT * FROM interests WHERE interest = ? ORDER BY date`
 }

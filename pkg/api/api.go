@@ -165,9 +165,12 @@ func (api *API) respondWithError(w http.ResponseWriter, code int, message string
 	api.App.Logger.ErrorWithField(message, "error from", "api")
 	server, _ := os.Hostname()
 	if api.App.Config.DevMode {
-		id, err := api.App.Notifier.SendMessage([]string{"debug"}, "API Error Encountered", message, server)
-		if err != nil {
-			api.App.Logger.ErrorWithField(err.Error(), "publishID", id)
+		ids, errors := api.App.SendMessage([]string{"debug"}, "API Error Encountered", message, server, "", nil)
+		api.App.Logger.ProcessSendMessageResults(ids, errors)
+		if len(errors) > 0 {
+			for _, e := range errors {
+				api.App.Logger.ErrorWithField(e.Error(), "Successful ID's", strings.Join(ids, ","))
+			}
 		}
 	}
 	api.respondWithJSON(w, code, JSONResponse{Error: message, OK: false})
@@ -218,13 +221,16 @@ func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	api.App.Logger.Debug("Request sent to /api/ping")
-	results, err := api.App.Notifier.SendMessage([]string{"hello"}, "NotifAPI accessed", "The endpoint /api/ping was accessed.", "PingHandler")
-	if err != nil {
-		api.App.Logger.Error(err)
-		api.respondWithError(w, http.StatusInternalServerError, "error sending notification "+err.Error())
+	ids, errors := api.App.SendMessage([]string{"hello"}, "NotifAPI accessed", "The endpoint /api/ping was accessed.", "", "PingHandler", nil)
+	api.App.Logger.ProcessSendMessageResults(ids, errors)
+	if len(errors) > 0 {
+		var errorStrings []string
+		for _, e := range errors {
+			errorStrings = append(errorStrings, e.Error())
+		}
+		api.respondWithError(w, http.StatusInternalServerError, "error sending notification "+strings.Join(errorStrings, ","))
 		return
 	}
-	api.App.Logger.Debug(results)
 	api.respondWithJSON(w, 200, "Pong\n")
 }
 
@@ -311,6 +317,6 @@ func (api *API) NotifyHandler(w http.ResponseWriter, r *http.Request) {
 		api.App.Logger.Error(err)
 	}
 
-	api.App.Notifier.SendMessageFull(data.Interests, data.Title, data.Body, data.Link, ip, data.Metadata)
+	api.App.SendMessage(data.Interests, data.Title, data.Body, ip, data.Link, nil)
 
 }

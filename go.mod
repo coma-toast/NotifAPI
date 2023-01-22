@@ -3,12 +3,20 @@ module github.com/coma-toast/notifapi
 go 1.18
 
 require (
+	github.com/disgoorg/disgo v0.14.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/pusher/push-notifications-go v0.0.0-20200210154345-764224c311b8
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.14.0
+)
+
+require (
+	github.com/disgoorg/json v1.0.0 // indirect
+	github.com/disgoorg/log v1.2.0 // indirect
+	github.com/disgoorg/snowflake/v2 v2.0.1 // indirect
+	github.com/sasha-s/go-csync v0.0.0-20210812194225-61421b77c44b // indirect
 )
 
 require (
