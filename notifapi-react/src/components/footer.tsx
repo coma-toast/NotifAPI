@@ -5,6 +5,7 @@ import BottomNavigationAction from "@mui/material/BottomNavigationAction";
 import RestoreIcon from "@mui/icons-material/Restore";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 
 export default function SimpleBottomNavigation() {
     const [value, setValue] = React.useState(0);
@@ -27,8 +28,9 @@ export default function SimpleBottomNavigation() {
                     icon={<FavoriteIcon />}
                 />
                 <BottomNavigationAction
-                    label="Nearby"
-                    icon={<LocationOnIcon />}
+                    label="Sign Up"
+                    icon={<ListAltIcon />}
+                    href="/signup"
                 />
             </BottomNavigation>
         </Box>

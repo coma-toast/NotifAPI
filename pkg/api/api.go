@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coma-toast/notifapi/internal/utils"
 	"github.com/coma-toast/notifapi/pkg/app"
 	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/golang-jwt/jwt"
@@ -46,8 +47,11 @@ func (api *API) RunAPI() {
 	//  r.HandleFunc("/", api.IndexHandler)
 	r.HandleFunc("/api/ping", api.PingHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/notify", api.NotifyHandler).Methods(http.MethodPost)
+	r.HandleFunc("/api/register", api.RegisterHandler).Methods(http.MethodPost)
 	r.HandleFunc("/api/history/{date}", api.HistoryHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/recent/{limit}", api.RecentHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/interest/{userId}/{name}", api.InterestNameHandler).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/api/interest/{userId}", api.InterestUserHandler).Methods(http.MethodGet)
 	r.Use()
 
 	spa := &forge.HTTPStatic{
@@ -234,6 +238,46 @@ func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {
 	api.respondWithJSON(w, 200, "Pong\n")
 }
 
+func (api *API) InterestNameHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	vars := mux.Vars(r)
+	if r.Method == http.MethodGet {
+		interests, err := api.App.Data.GetInterestsByUserAndName(vars["userId"], vars["name"])
+		if err != nil {
+			api.App.Logger.Error(err)
+			api.respondWithError(w, http.StatusBadRequest, "Unable to get user interests")
+			return
+		}
+
+		api.respondWithJSON(w, http.StatusOK, interests)
+	}
+
+	if r.Method == http.MethodPost {
+		result, err := api.App.Data.InsertInterest(vars["name"], vars["webhook"], vars["userId"])
+		if err != nil {
+			api.App.Logger.Error(err)
+			api.respondWithError(w, http.StatusBadRequest, "Unable to add webhook")
+			return
+		}
+
+		api.respondWithJSON(w, http.StatusOK, result)
+	}
+}
+func (api *API) InterestUserHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	vars := mux.Vars(r)
+	interests, err := api.App.Data.GetInterestsByUser(vars["userId"])
+	if err != nil {
+		api.App.Logger.Error(err)
+		api.respondWithError(w, http.StatusBadRequest, "Unable to get user interests")
+		return
+	}
+
+	api.respondWithJSON(w, http.StatusOK, interests)
+}
+
 func (api *API) HistoryHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -318,5 +362,26 @@ func (api *API) NotifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.App.SendMessage(data.Interests, data.Title, data.Body, ip, data.Link, nil)
+}
 
+func (api *API) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	var data utils.User
+
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		api.App.Logger.Error(err)
+		api.respondWithError(w, http.StatusBadGateway, "error decoding JSON")
+		return
+	}
+
+	_, err = api.App.Data.AddUser(data)
+	if err != nil {
+		api.App.Logger.Error(err)
+		api.respondWithError(w, http.StatusBadGateway, "error adding user: "+err.Error())
+		return
+	}
+
+	api.respondWithJSON(w, http.StatusOK, "User added successfully")
 }

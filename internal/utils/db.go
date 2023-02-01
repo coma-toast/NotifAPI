@@ -27,7 +27,7 @@ type NotificationRow struct {
 	Metadata    string `db:"metadata" json:"metadata"`
 }
 
-type UserRow struct {
+type User struct {
 	Id                string `db:"id" json:"id"`
 	Date_added        string `db:"date_added" json:"date_added"`
 	Date_updated      string `db:"date_updated" json:"date_updated"`
@@ -176,5 +176,86 @@ func (d *DataModel) GetHistory(date time.Time) ([]NotificationRow, error) {
 }
 
 func (d *DataModel) GetInterestByName(name string) (InterestRow, error) {
-	statement := `SELECT * FROM interests WHERE interest = ? ORDER BY date`
+	var returnData InterestRow
+	statement := `SELECT * FROM interests WHERE interest = ? ORDER BY date_updated`
+	row := d.DB.QueryRowx(statement, name)
+	err := row.StructScan(&returnData)
+
+	return returnData, err
+}
+
+func (d *DataModel) GetInterestsByUserAndName(userId, name string) ([]InterestRow, error) {
+	returnData := make([]InterestRow, 0)
+	statement := `SELECT * FROM interests WHERE interest = ? AND userid = ? ORDER BY date_updated`
+	rows, err := d.DB.Queryx(statement, name, userId)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var row InterestRow
+		err := rows.StructScan(&row)
+		if err != nil {
+			return nil, err
+		}
+		returnData = append(returnData, row)
+	}
+	return returnData, err
+}
+
+func (d *DataModel) GetInterestsByUser(userId string) ([]InterestRow, error) {
+	returnData := make([]InterestRow, 0)
+	statement := `SELECT * FROM interests WHERE userid = ? ORDER BY date_updated`
+	rows, err := d.DB.Queryx(statement, userId)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var row InterestRow
+		err := rows.StructScan(&row)
+		if err != nil {
+			return nil, err
+		}
+		returnData = append(returnData, row)
+	}
+
+	return returnData, err
+}
+
+func (d *DataModel) InsertInterest(name, webhook, userId string) (sql.Result, error) {
+	insert := `INSERT INTO interests 
+	(
+		interest,
+		webhook,
+		userid
+	)
+	VALUES 
+	(
+		?,
+		?,
+		?
+	);`
+
+	return d.DB.Exec(insert, name, webhook, userId)
+}
+
+func (d *DataModel) AddUser(user User) (sql.Result, error) {
+	user.Password = HashPassword(user.Password)
+	insert := `INSERT INTO users 
+	(
+		username,
+		password,
+		first_name,
+		last_name,
+		email
+	)
+	VALUES 
+	(
+		?,
+		?,
+		?,
+		?,
+		?
+	);`
+
+	return d.DB.Exec(insert, user.Username, user.Password, user.First_name, user.Last_name, user.Email)
 }
