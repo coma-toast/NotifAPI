@@ -7,7 +7,7 @@ import (
 	"github.com/coma-toast/notifapi/internal/utils"
 	"github.com/coma-toast/notifapi/pkg/api"
 	"github.com/coma-toast/notifapi/pkg/app"
-	"github.com/coma-toast/notifapi/pkg/pusher"
+	"github.com/coma-toast/notifapi/pkg/discord_notifier" // Add this import statement
 )
 
 func main() {
@@ -17,14 +17,15 @@ func main() {
 	flag.Parse()
 
 	app.Config = *utils.GetConf(*configPath)
-	app.Logger.Init(false)
+	app.Logger.Init(false, app.Config.LogFilePath+"notifapi.log")
 	app.Logger.Info("App initialized")
 	app.Data.Init(app.Config.DBFilePath)
 	hostname, err := os.Hostname()
 	if err != nil {
 		app.Logger.Error(err)
 	}
-	app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data}
+	// app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data}
+	app.Notifier = discord_notifier.NewDiscordNotifier(app.Config.DiscordWebhookURL)
 	// * re-enable when back online
 	id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "main.go")
 	if err != nil {
