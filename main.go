@@ -24,10 +24,14 @@ func main() {
 	if err != nil {
 		app.Logger.Error(err)
 	}
+
+	if app.Config.Name == "" {
+		app.Config.Name = hostname
+	}
 	// app.Notifier = pusher.Pusher{InstanceID: app.Config.InstanceID, SecretKey: app.Config.SecretKey, Data: &app.Data}
 	app.Notifier = discord_notifier.NewDiscordNotifier(app.Config.DiscordWebhookURL)
 	// * re-enable when back online
-	id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+hostname, "main.go")
+	id, err := app.Notifier.SendMessage([]string{"hello"}, "NotifAPI", "NotifAPI is starting up on "+app.Config.Name, "main.go")
 	if err != nil {
 		app.Logger.ErrorWithField("Error sending message", "interest", "hello")
 	}

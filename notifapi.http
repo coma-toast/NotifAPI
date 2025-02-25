@@ -1,12 +1,8 @@
-GET http://127.0.0.1:8080/api/ping
-
-HTTP/1.1 200  - OK
-content-type: application/json
-date: Tue, 25 Feb 2025 17:24:33 GMT
-content-length: 8
-connection: close
+@host = http://127.0.0.1:8080
 ###
-POST http://localhost:8080/api/notify
+GET /api/ping
+###
+POST /api/notify
 
 {
     "interests": ["hello"],
