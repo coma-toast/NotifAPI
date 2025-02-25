@@ -2,6 +2,7 @@
 echo "Creating config file..."
 echo "DB Path: ${DB_PATH}"
 cat <<EOF > /app/config.yaml
+name: ${NAME}
 dbfilepath: ${DB_PATH}
 devmode: ${DEV_MODE}
 instanceid: ${INSTANCE_ID}
