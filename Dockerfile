@@ -29,7 +29,5 @@ COPY create_config.sh /app/create_config.sh
 RUN chmod +x /app/create_config.sh
 RUN /app/create_config.sh
 
-RUN cat /app/config.yaml
-
 CMD ["/app/notifapi"]
 EXPOSE ${PORT}
