@@ -1,0 +1,43 @@
+@host = http://127.0.0.1:10887
+###
+GET /api/ping
+
+HTTP/1.1 200  - OK
+content-type: application/json
+date: Tue, 25 Feb 2025 17:51:49 GMT
+content-length: 8
+connection: close
+###
+POST /api/notify
+
+{
+    "interests": ["hello"],
+    "title": "Test message",
+    "body": "This is a test from my testing platform",
+    "link": "",
+    "source": "My-Laptop",
+    "metadata": {
+        "server": "macbook-pro"
+    }
+}
+
+HTTP/1.1 200  - OK
+date: Tue, 25 Feb 2025 17:52:47 GMT
+content-length: 0
+connection: close
+###
+GET /api/recent/10
+
+HTTP/1.1 200  - OK
+content-type: application/json
+date: Tue, 25 Feb 2025 17:52:48 GMT
+content-length: 2
+connection: close
+###
+GET /api/history/2025-02-20T12:54:19.428978-05:00
+
+HTTP/1.1 200  - OK
+content-type: application/json
+date: Tue, 25 Feb 2025 17:54:32 GMT
+content-length: 2
+connection: close

@@ -10,26 +10,31 @@ import (
 
 // config is the configuration struct
 type Config struct {
-	LogFilePath    string
-	DBFilePath     string
-	InstanceID     string
-	SecretKey      string
-	JWTKey         string
-	DiscordWebhook string
-	Port           string
-	DevMode        bool
+	// Name of the server running the app
+	Name              string
+	LogFilePath       string
+	DBFilePath        string
+	InstanceID        string
+	SecretKey         string
+	Port              string
+	DiscordWebhookURL string
+	DiscordWebhook    string
+	JWTKey            string
+	DevMode           bool
 }
 
 func GetConf(path string) *Config {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
+	viper.SetDefault("Name", "")
 	viper.SetDefault("LogFilePath", "./logs/")
 	viper.SetDefault("DBFilePath", "./db")
 	viper.SetDefault("InstanceID", "")
 	viper.SetDefault("SecretKey", "")
 	viper.SetDefault("DiscordWebhook", "")
 	viper.SetDefault("Port", "")
+	viper.SetDefault("DiscordWebhookURL", "")
 	viper.SetDefault("DevMode", false)
 
 	if err := viper.ReadInConfig(); err != nil {
