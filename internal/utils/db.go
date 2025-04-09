@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
+	"strconv"
 	"time"
 
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type DataModel struct {
 	DB *sqlx.DB
 }
-
 type NotificationRow struct {
 	PubID       string `db:"pub_id" json:"pub_id"`
 	Date        string `db:"date" json:"date"`
@@ -49,106 +49,148 @@ type InterestRow struct {
 	Webhook      string `db:"webhook" json:"webhook"`
 }
 
-func (d *DataModel) Init(location string) {
-	err := os.MkdirAll(location, os.ModePerm)
+type BucketRow struct {
+	Id           string `db:"id" json:"id"`
+	Date_added   string `db:"date_added" json:"date_added"`
+	Date_updated string `db:"date_updated" json:"date_updated"`
+	UserID       string `db:"userid" json:"userid"`
+	Bucket       string `db:"bucket" json:"bucket"`
+	Webhook      string `db:"webhook" json:"webhook"`
+}
+
+func (d *DataModel) Init(config *Config) {
+	// PostgreSQL connection string
+	connStr := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.PostgresHost,
+		config.PostgresPort,
+		config.PostgresUser,
+		config.PostgresPass,
+		config.PostgresDB,
+	)
+
+	// Connect to PostgreSQL
+	var err error
+	d.DB, err = sqlx.Connect("postgres", connStr)
 	if err != nil {
-		log.Fatal("Unable to create database directory", err)
+		log.Fatalf("Unable to connect to PostgreSQL: %v", err)
 	}
 
-	d.DB = sqlx.MustConnect("sqlite3", location+"/data.db")
-
+	// Create tables if they don't exist
 	notifications := `CREATE TABLE IF NOT EXISTS notifications (
-		pub_id text PRIMARY KEY,
-		date TEXT DEFAULT CURRENT_TIMESTAMP,
-		source TEXT,
-		destination TEXT,
-		interests TEXT,
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		server TEXT,
+		buckets INTEGER[] NOT NULL,
 		title TEXT,
-		message TEXT,
-		metadata TEXT
+		body TEXT,
+		link TEXT,
+		request_data TEXT,
+		metadata JSONB
 	);`
 
 	d.DB.MustExec(notifications)
-	fmt.Println("DB Initialized: notifications")
 
 	users := `CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY,
-		date_added TEXT DEFAULT CURRENT_TIMESTAMP,
-		date_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+		id SERIAL PRIMARY KEY,
+		date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		date_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		username TEXT NOT NULL,
-		is_admin BOOL DEFAULT false,
+		is_admin BOOLEAN DEFAULT false,
 		password TEXT NOT NULL,
 		first_name TEXT NOT NULL,
 		last_name TEXT NOT NULL,
 		email TEXT NOT NULL,
-		account_confirmed TEXT DEFAULT ""
-		)`
+		account_confirmed BOOLEAN DEFAULT false
+	);`
 
 	d.DB.MustExec(users)
 	fmt.Println("DB Initialized: users")
 
-	interests := `CREATE TABLE IF NOT EXISTS interests (
-		id INTEGER PRIMARY KEY,
-		date_added TEXT DEFAULT CURRENT_TIMESTAMP,
-		date_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+	buckets := `CREATE TABLE IF NOT EXISTS buckets (
+		id SERIAL PRIMARY KEY,
+		date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		date_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		userid TEXT NOT NULL,
-		interest TEXT NOT NULL,
+		bucket TEXT NOT NULL,
 		webhook TEXT NOT NULL
-		)`
-
-	d.DB.MustExec(interests)
-	fmt.Println("DB Initialized: interests")
-}
-
-func (d *DataModel) AddNotification(pubID, source, destination, title, message string, interests []string, metadata map[string]interface{}) (sql.Result, error) {
-	insert := `INSERT INTO notifications 
-	(
-		pub_id,
-		source,
-		destination,
-		interests,
-		title,
-		message,
-		metadata
-	)
-	VALUES 
-	(
-		?,
-		?,
-		?,
-		?,
-		?,
-		?,
-		?
 	);`
 
-	jsonInterests, err := json.Marshal(interests)
+	d.DB.MustExec(buckets)
+	fmt.Println("DB Initialized: buckets")
+}
+
+func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, error) {
+	bucketIDs := make([]int, len(payload.Buckets))
+	for i, bucket := range payload.Buckets {
+		var err error
+		bucketRow, err := d.GetBucketByName(bucket)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				result, err := d.AddBucket(BucketRow{
+					Bucket:  bucket,
+					Webhook: payload.Link,
+					UserID:  payload.Server,
+				})
+				if err != nil {
+					return nil, fmt.Errorf("error adding bucket '%s': %v", bucket, err)
+				}
+				id, err := result.LastInsertId()
+				if err != nil {
+					return nil, fmt.Errorf("error getting last insert ID for bucket '%s': %v", bucket, err)
+				}
+				bucketIDs[i] = int(id)
+			}
+
+			bucketIDs[i], err = strconv.Atoi(bucket)
+			if err != nil {
+				return nil, fmt.Errorf("invalid bucket ID '%s': %v", bucket, err)
+			}
+		} else {
+			bucketIDs[i], err = strconv.Atoi(bucketRow.Id)
+			if err != nil {
+				return nil, fmt.Errorf("invalid bucket ID '%s': %v", bucketRow.Id, err)
+			}
+		}
+	}
+
+	// Serialize metadata
+	metadata, err := json.Marshal(payload.Metadata)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonMetadata, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, err
-	}
+	// Insert the notification
+	insert := `INSERT INTO notifications
+	(
+		server,
+		buckets,
+		title,
+		body,
+		link,
+		request_data,
+		metadata
+	)
+	VALUES
+	(
+		$1,
+		$2,
+		$3,
+		$4,
+		$5,
+		$6,
+		$7
+	);`
 
-	return d.DB.Exec(insert, pubID, source, destination, jsonInterests, title, message, jsonMetadata)
+	return d.DB.Exec(insert, payload.Server, bucketIDs, payload.Title, payload.Body, payload.Link, payload.RequestData, metadata)
 }
 
 func (d *DataModel) GetRecentNotifications(limit int) ([]NotificationRow, error) {
 	notifications := make([]NotificationRow, 0)
-	statement := `SELECT * FROM notifications ORDER BY date DESC LIMIT ?`
-	rows, err := d.DB.Queryx(statement, limit)
+	statement := `SELECT * FROM notifications ORDER BY date DESC LIMIT $1`
+	err := d.DB.Select(&notifications, statement, limit)
 	if err != nil {
 		return nil, err
-	}
-	for rows.Next() {
-		var row NotificationRow
-		err := rows.StructScan(&row)
-		if err != nil {
-			return nil, err
-		}
-		notifications = append(notifications, row)
 	}
 
 	return notifications, nil
@@ -156,83 +198,100 @@ func (d *DataModel) GetRecentNotifications(limit int) ([]NotificationRow, error)
 
 func (d *DataModel) GetHistory(date time.Time) ([]NotificationRow, error) {
 	notifications := make([]NotificationRow, 0)
-	statement := `SELECT * FROM notifications WHERE date > ? ORDER BY date`
-	// test := date.Format("2006-01-02 15:04:05")
-	// fmt.Println(test)
-	rows, err := d.DB.Queryx(statement, date.String())
+	statement := `SELECT * FROM notifications WHERE date > $1 ORDER BY date`
+	err := d.DB.Select(&notifications, statement, date)
 	if err != nil {
 		return nil, err
-	}
-	for rows.Next() {
-		var row NotificationRow
-		err := rows.StructScan(&row)
-		if err != nil {
-			return nil, err
-		}
-		notifications = append(notifications, row)
 	}
 
 	return notifications, nil
 }
 
-func (d *DataModel) GetInterestByName(name string) (InterestRow, error) {
-	var returnData InterestRow
-	statement := `SELECT * FROM interests WHERE interest = ? ORDER BY date_updated`
-	row := d.DB.QueryRowx(statement, name)
-	err := row.StructScan(&returnData)
+func (d *DataModel) GetBucketByName(name string) (BucketRow, error) {
+	var returnData BucketRow
+	statement := `SELECT * FROM buckets WHERE bucket = $1 ORDER BY date_updated`
+	err := d.DB.Get(&returnData, statement, name)
 
 	return returnData, err
 }
 
-func (d *DataModel) GetInterestsByUserAndName(userId, name string) ([]InterestRow, error) {
-	returnData := make([]InterestRow, 0)
-	statement := `SELECT * FROM interests WHERE interest = ? AND userid = ? ORDER BY date_updated`
-	rows, err := d.DB.Queryx(statement, name, userId)
+func (d *DataModel) GetBucketByID(id string) (BucketRow, error) {
+	var returnData BucketRow
+	statement := `SELECT * FROM buckets WHERE id = $1`
+	err := d.DB.Get(&returnData, statement, id)
 	if err != nil {
-		return nil, err
+		return BucketRow{}, err
 	}
-	for rows.Next() {
-		var row InterestRow
-		err := rows.StructScan(&row)
-		if err != nil {
-			return nil, err
-		}
-		returnData = append(returnData, row)
-	}
-	return returnData, err
+	return returnData, nil
 }
 
-func (d *DataModel) GetInterestsByUser(userId string) ([]InterestRow, error) {
-	returnData := make([]InterestRow, 0)
-	statement := `SELECT * FROM interests WHERE userid = ? ORDER BY date_updated`
-	rows, err := d.DB.Queryx(statement, userId)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var row InterestRow
-		err := rows.StructScan(&row)
-		if err != nil {
-			return nil, err
-		}
-		returnData = append(returnData, row)
-	}
-
-	return returnData, err
-}
-
-func (d *DataModel) InsertInterest(name, webhook, userId string) (sql.Result, error) {
-	insert := `INSERT INTO interests 
+func (d *DataModel) AddBucket(bucket BucketRow) (sql.Result, error) {
+	insert := `INSERT INTO buckets 
 	(
-		interest,
+		bucket,
 		webhook,
 		userid
 	)
 	VALUES 
 	(
-		?,
-		?,
-		?
+		$1,
+		$2,
+		$3
+	);`
+
+	return d.DB.Exec(insert, bucket.Bucket, bucket.Webhook, bucket.UserID)
+}
+
+func (d *DataModel) UpdateBucket(bucket BucketRow) (sql.Result, error) {
+	update := `UPDATE buckets
+	SET
+		bucket = $1,
+		webhook = $2,
+		userid = $3,
+		date_updated = CURRENT_TIMESTAMP
+	WHERE id = $4;`
+	return d.DB.Exec(update, bucket.Bucket, bucket.Webhook, bucket.UserID, bucket.Id)
+}
+
+func (d *DataModel) DeleteBucket(id string) (sql.Result, error) {
+	delete := `DELETE FROM buckets WHERE id = $1;`
+	return d.DB.Exec(delete, id)
+}
+
+func (d *DataModel) GetBucketsByUserAndName(userId, name string) ([]BucketRow, error) {
+	returnData := make([]BucketRow, 0)
+	statement := `SELECT * FROM buckets WHERE bucket = $1 AND userid = $2 ORDER BY date_updated`
+	err := d.DB.Select(&returnData, statement, name, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return returnData, nil
+}
+
+func (d *DataModel) GetBucketsByUser(userId string) ([]BucketRow, error) {
+	returnData := make([]BucketRow, 0)
+	statement := `SELECT * FROM buckets WHERE userid = $1 ORDER BY date_updated`
+	err := d.DB.Select(&returnData, statement, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return returnData, nil
+}
+
+func (d *DataModel) InsertBucket(name, webhook, userId string) (sql.Result, error) {
+	insert := `INSERT INTO buckets 
+	(
+		bucket,
+		webhook,
+		userid
+	)
+	VALUES 
+	(
+		$1,
+		$2,
+		$3
 	);`
 
 	return d.DB.Exec(insert, name, webhook, userId)
@@ -250,11 +309,11 @@ func (d *DataModel) AddUser(user User) (sql.Result, error) {
 	)
 	VALUES 
 	(
-		?,
-		?,
-		?,
-		?,
-		?
+		$1,
+		$2,
+		$3,
+		$4,
+		$5
 	);`
 
 	return d.DB.Exec(insert, user.Username, user.Password, user.First_name, user.Last_name, user.Email)

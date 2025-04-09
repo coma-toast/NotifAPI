@@ -12,12 +12,20 @@ type App struct {
 	NotifierTargets []notification.Notifier
 }
 
-func (a *App) SendMessage(interests []string, title, body, source, link string, metadata map[string]interface{}) ([]string, []error) {
+func (a *App) SendMessage(payload notification.Message) ([]string, []error) {
 	var errors []error
 	var ids []string
+	_, err := a.Data.AddNotification(payload)
+	if err != nil {
+		a.Logger.ErrorWithField("error adding notification to db", payload.Title, err.Error())
+		return nil, []error{err}
+	}
+
 	for _, notifier := range a.NotifierTargets {
-		id, err := notifier.SendMessageFull(interests, title, body, source, link, metadata)
+		a.Logger.LogMessage(payload)
+		id, err := notifier.SendMessage(payload)
 		if err != nil {
+			a.Logger.ErrorWithField("error sending message", payload.Title, err.Error())
 			errors = append(errors, err)
 			continue
 		}

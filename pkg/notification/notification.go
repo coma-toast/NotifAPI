@@ -1,16 +1,17 @@
 package notification
 
+import "github.com/ipinfo/go/v2/ipinfo"
+
 type Message struct {
-	Interests []string               `json:"interests"`
-	Title     string                 `json:"title"`
-	Body      string                 `json:"body"`
-	Link      string                 `json:"link"`
-	Source    string                 `json:"source"`
-	Metadata  map[string]interface{} `json:"metadata"`
+	Buckets     []string       `json:"buckets"`
+	Title       string         `json:"title"`
+	Body        string         `json:"body"`
+	Link        string         `json:"link,omitempty"`
+	Server      string         `json:"source"`
+	RequestData ipinfo.Core    `json:"request_data,omitempty"`
+	Metadata    map[string]any `json:"metadata,omitempty"`
 }
 
 type Notifier interface {
-	SendMessage(interests []string, title, body, source string) (string, error)
-	SendMessageWithLink(interests []string, title, body, link, source string) (string, error)
-	SendMessageFull(interests []string, title, body, link, source string, metadata map[string]interface{}) (string, error)
+	SendMessage(message Message) (string, error)
 }

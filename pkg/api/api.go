@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
+	"github.com/ipinfo/go/v2/ipinfo"
 	"github.com/kyberbits/forge/forge"
 )
 
@@ -50,20 +52,23 @@ func (api *API) RunAPI() {
 	r.HandleFunc("/api/register", api.RegisterHandler).Methods(http.MethodPost)
 	r.HandleFunc("/api/history/{date}", api.HistoryHandler).Methods(http.MethodGet)
 	r.HandleFunc("/api/recent/{limit}", api.RecentHandler).Methods(http.MethodGet)
-	r.HandleFunc("/api/interest/{userId}/{name}", api.InterestNameHandler).Methods(http.MethodGet, http.MethodPost)
-	r.HandleFunc("/api/interest/{userId}", api.InterestUserHandler).Methods(http.MethodGet)
+	r.HandleFunc("/api/bucket/{userId}/{name}", api.BucketNameHandler).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/api/bucket/{userId}", api.BucketUserHandler).Methods(http.MethodGet)
 	r.Use()
 
 	spa := &forge.HTTPStatic{
 		FileSystem: http.FS(os.DirFS("./notifapi-react/dist")),
-		NotFoundHandler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		NotFoundHandler: func(w http.ResponseWriter, r *http.Request, httpstatic *forge.HTTPStatic) {
 			file, err := os.Open("./notifapi-react/dist/index.html")
 			if err != nil {
-				panic(err)
+				http.Error(w, "Could not open index.html", http.StatusInternalServerError)
+				return
 			}
+			defer file.Close()
 
+			w.Header().Set("Content-Type", "text/html")
 			io.Copy(w, file)
-		}),
+		},
 	}
 	// spa := spaHandler{staticPath: "./notifapi-react/dist", indexPath: "./notifapi-react/dist/index.html"}
 	r.PathPrefix("/").Handler(spa)
@@ -135,12 +140,14 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
-func getIP(r *http.Request) (string, error) {
+func (api *API) getIP(r *http.Request) (*ipinfo.Core, error) {
+	client := ipinfo.NewClient(nil, nil, api.App.Config.IPInfoToken)
+
 	//Get IP from the X-REAL-IP header
 	ip := r.Header.Get("X-REAL-IP")
 	netIP := net.ParseIP(ip)
 	if netIP != nil {
-		return ip, nil
+		return client.GetIPInfo(netIP)
 	}
 
 	//Get IP from X-FORWARDED-FOR header
@@ -149,27 +156,39 @@ func getIP(r *http.Request) (string, error) {
 	for _, ip := range splitIps {
 		netIP := net.ParseIP(ip)
 		if netIP != nil {
-			return ip, nil
+			return client.GetIPInfo(netIP)
 		}
 	}
 
 	//Get IP from RemoteAddr
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return "", err
+		return &ipinfo.Core{}, err
 	}
+
 	netIP = net.ParseIP(ip)
-	if netIP != nil {
-		return ip, nil
+	info, err := client.GetIPInfo(net.ParseIP(ip))
+	if err != nil {
+		log.Fatal(err)
+		return &ipinfo.Core{}, err
 	}
-	return "", fmt.Errorf("no valid ip found")
+
+	return info, nil
 }
 
 func (api *API) respondWithError(w http.ResponseWriter, code int, message string) {
-	api.App.Logger.ErrorWithField(message, "error from", "api")
+	api.App.Logger.ErrorWithField(message, "API error response", "respondWithError")
 	server, _ := os.Hostname()
+	notificationPayload := notification.Message{
+		Title:   "API Error Encountered",
+		Body:    message,
+		Link:    "API Error",
+		Server:  server,
+		Buckets: []string{"error"},
+	}
+
 	if api.App.Config.DevMode {
-		ids, errors := api.App.SendMessage([]string{"debug"}, "API Error Encountered", message, server, "", nil)
+		ids, errors := api.App.SendMessage(notificationPayload)
 		api.App.Logger.ProcessSendMessageResults(ids, errors)
 		if len(errors) > 0 {
 			for _, e := range errors {
@@ -224,8 +243,15 @@ func (api *API) validateUserToken(claims *Claims, w http.ResponseWriter, r *http
 func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
+	payloadMessage := notification.Message{
+		Title:   "API Ping",
+		Body:    "The endpoint /api/ping was accessed.",
+		Server:  "PingHandler",
+		Buckets: []string{"ping"},
+	}
+
 	api.App.Logger.Debug("Request sent to /api/ping")
-	ids, errors := api.App.SendMessage([]string{"hello"}, "NotifAPI accessed", "The endpoint /api/ping was accessed.", "", "PingHandler", nil)
+	ids, errors := api.App.SendMessage(payloadMessage)
 	api.App.Logger.ProcessSendMessageResults(ids, errors)
 	if len(errors) > 0 {
 		var errorStrings []string
@@ -238,23 +264,23 @@ func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {
 	api.respondWithJSON(w, 200, "Pong\n")
 }
 
-func (api *API) InterestNameHandler(w http.ResponseWriter, r *http.Request) {
+func (api *API) BucketNameHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	vars := mux.Vars(r)
 	if r.Method == http.MethodGet {
-		interests, err := api.App.Data.GetInterestsByUserAndName(vars["userId"], vars["name"])
+		buckets, err := api.App.Data.GetBucketsByUserAndName(vars["userId"], vars["name"])
 		if err != nil {
 			api.App.Logger.Error(err)
-			api.respondWithError(w, http.StatusBadRequest, "Unable to get user interests")
+			api.respondWithError(w, http.StatusBadRequest, "Unable to get user buckets")
 			return
 		}
 
-		api.respondWithJSON(w, http.StatusOK, interests)
+		api.respondWithJSON(w, http.StatusOK, buckets)
 	}
 
 	if r.Method == http.MethodPost {
-		result, err := api.App.Data.InsertInterest(vars["name"], vars["webhook"], vars["userId"])
+		result, err := api.App.Data.InsertBucket(vars["name"], vars["webhook"], vars["userId"])
 		if err != nil {
 			api.App.Logger.Error(err)
 			api.respondWithError(w, http.StatusBadRequest, "Unable to add webhook")
@@ -264,18 +290,18 @@ func (api *API) InterestNameHandler(w http.ResponseWriter, r *http.Request) {
 		api.respondWithJSON(w, http.StatusOK, result)
 	}
 }
-func (api *API) InterestUserHandler(w http.ResponseWriter, r *http.Request) {
+func (api *API) BucketUserHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	vars := mux.Vars(r)
-	interests, err := api.App.Data.GetInterestsByUser(vars["userId"])
+	buckets, err := api.App.Data.GetBucketsByUser(vars["userId"])
 	if err != nil {
 		api.App.Logger.Error(err)
-		api.respondWithError(w, http.StatusBadRequest, "Unable to get user interests")
+		api.respondWithError(w, http.StatusBadRequest, "Unable to get user buckets")
 		return
 	}
 
-	api.respondWithJSON(w, http.StatusOK, interests)
+	api.respondWithJSON(w, http.StatusOK, buckets)
 }
 
 func (api *API) HistoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -356,12 +382,26 @@ func (api *API) NotifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip, err := getIP(r)
+	ipinfo, err := api.getIP(r)
 	if err != nil {
 		api.App.Logger.Error(err)
+	} else {
+		data.RequestData = *ipinfo
 	}
 
-	api.App.SendMessage(data.Interests, data.Title, data.Body, ip, data.Link, nil)
+	if data.Server == "" {
+		server, err := os.Hostname()
+		if err != nil {
+			api.App.Logger.Error(err)
+			data.Server = "unknown"
+		} else {
+			data.Server = server
+		}
+	}
+
+	api.App.SendMessage(data)
+	api.App.Logger.LogMessage(data)
+	api.respondWithJSON(w, http.StatusOK, "Notification sent successfully")
 }
 
 func (api *API) RegisterHandler(w http.ResponseWriter, r *http.Request) {

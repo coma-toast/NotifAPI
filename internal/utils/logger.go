@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/sirupsen/logrus"
 )
 
@@ -79,6 +80,18 @@ func (l *Logger) Error(err error) {
 
 func (l *Logger) ErrorWithField(message, field, value string) {
 	l.logger.WithField(field, value).Error(message)
+}
+
+func (l *Logger) LogMessage(message notification.Message) {
+
+	l.logger.WithFields(logrus.Fields{
+		"buckets":  message.Buckets,
+		"title":    message.Title,
+		"body":     message.Body,
+		"source":   message.Server,
+		"link":     message.Link,
+		"metadata": message.Metadata,
+	}).Info("Logging message")
 }
 
 func (l *Logger) ProcessSendMessageResults(ids []string, errors []error) {

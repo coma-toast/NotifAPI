@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/coma-toast/notifapi/internal/utils"
+	"github.com/coma-toast/notifapi/pkg/notification"
 	pushnotifications "github.com/pusher/push-notifications-go"
 )
 
@@ -67,33 +68,30 @@ func (p Pusher) convertRequest(request Request) (map[string]interface{}, error) 
 	return m, nil
 }
 
-func (p Pusher) SendMessage(interests []string, title, body, source string) (string, error) {
-	metadata := make(map[string]interface{})
-	link := ""
-	return p.SendMessageFull(interests, title, body, link, source, metadata)
+func (p Pusher) SendMessage(payload notification.Message) (string, error) {
+	return p.SendMessageFull(payload)
 }
 
-func (p Pusher) SendMessageWithLink(interests []string, title, body, link, source string) (string, error) {
-	metadata := make(map[string]interface{})
-	return p.SendMessageFull(interests, title, body, link, source, metadata)
+func (p Pusher) SendMessageWithLink(payload notification.Message) (string, error) {
+	return p.SendMessageFull(payload)
 }
 
-func (p Pusher) SendMessageFull(interests []string, title, body, link, source string, metadata map[string]interface{}) (string, error) {
+func (p Pusher) SendMessageFull(payload notification.Message) (string, error) {
 	beamsClient, _ := pushnotifications.New(p.InstanceID, p.SecretKey)
 
-	request := p.buildRequest(title, body, link, metadata)
+	request := p.buildRequest(payload.Title, payload.Body, payload.Link, payload.Metadata)
 	publishRequest, err := p.convertRequest(request)
 	if err != nil {
 		return "", err
 	}
 
-	pubId, err := beamsClient.PublishToInterests(interests, publishRequest)
+	pubId, err := beamsClient.PublishToInterests(payload.Buckets, publishRequest)
 	if err != nil {
 		fmt.Println(err)
 		return "", err
 	}
 
-	p.Data.AddNotification(pubId, source, "pusher", title, body, interests, metadata)
+	p.Data.AddNotification(payload)
 
 	return pubId, nil
 }
