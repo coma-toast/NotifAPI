@@ -14,10 +14,10 @@ type Notification struct {
 func (n *Notification) SendMessage(title, body string) error {
 	client := client.Client{Target: n.Target} // the NotifAPI server (i.e. "http://alerts.mysite.com:1234")
 	message := notification.Message{
-		Interests: []string{"hello"},
-		Title:     title,
-		Body:      body,
-		Source:    "Source Application Name", // what application are you sending this from
+		Buckets: []string{"hello"},
+		Title:   title,
+		Body:    body,
+		Server:  "Source Application Name", // what application are you sending this from
 	}
 
 	response, err := client.SendMessage(message)
