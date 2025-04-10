@@ -10,6 +10,7 @@ import (
 
 	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
@@ -85,7 +86,7 @@ func (d *DataModel) Init(config *Config) {
 		title TEXT,
 		body TEXT,
 		link TEXT,
-		request_data TEXT,
+		request_data JSONB,
 		metadata JSONB
 	);`
 
@@ -140,11 +141,8 @@ func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, e
 					return nil, fmt.Errorf("error getting last insert ID for bucket '%s': %v", bucket, err)
 				}
 				bucketIDs[i] = int(id)
-			}
-
-			bucketIDs[i], err = strconv.Atoi(bucket)
-			if err != nil {
-				return nil, fmt.Errorf("invalid bucket ID '%s': %v", bucket, err)
+			} else {
+				return nil, fmt.Errorf("error retrieving bucket '%s': %v", bucket, err)
 			}
 		} else {
 			bucketIDs[i], err = strconv.Atoi(bucketRow.Id)
@@ -154,13 +152,17 @@ func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, e
 		}
 	}
 
-	// Serialize metadata
-	metadata, err := json.Marshal(payload.Metadata)
+	// Serialize the ipinfo.Core struct to JSON
+	metadata, err := json.Marshal(payload.Metadata) // Assuming payload.Metadata is of type ipinfo.Core
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to serialize metadata: %v", err)
+	}
+	requestData, err := json.Marshal(payload.RequestData) // Assuming payload.RequestData is of type ipinfo.Core
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize request data: %v", err)
 	}
 
-	// Insert the notification
+	// Use the serialized JSON in the query
 	insert := `INSERT INTO notifications
 	(
 		server,
@@ -182,7 +184,8 @@ func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, e
 		$7
 	);`
 
-	return d.DB.Exec(insert, payload.Server, bucketIDs, payload.Title, payload.Body, payload.Link, payload.RequestData, metadata)
+	// Pass the serialized JSON (metadata) as the $6 parameter
+	return d.DB.Exec(insert, payload.Server, pq.Array(bucketIDs), payload.Title, payload.Body, payload.Link, string(metadata), requestData)
 }
 
 func (d *DataModel) GetRecentNotifications(limit int) ([]NotificationRow, error) {

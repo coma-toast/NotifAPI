@@ -2,6 +2,12 @@
 ###
 GET /api/ping
 
+
+HTTP/1.1 500  - Internal Server Error
+content-type: application/json
+date: Thu, 10 Apr 2025 21:14:47 GMT
+content-length: 142
+connection: close
 ###
 POST /api/notify
 
