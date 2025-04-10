@@ -1,16 +1,43 @@
 package utils
 
 import (
+	"fmt"
+	"io"
 	"os"
 
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/sirupsen/logrus"
 )
 
 type Logger struct {
 	logger *logrus.Logger
+	file   *os.File
 }
 
-func (l *Logger) Init(json bool) {
+// Write logs to multiple writers
+type multiLogWriter struct {
+	writers []io.Writer
+}
+
+func (m multiLogWriter) Write(p []byte) (int, error) {
+	n := len(p)
+	for _, w := range m.writers {
+		nw, err := w.Write(p[:n])
+		if err != nil {
+			return nw, err
+		}
+		n -= nw
+	}
+	return n, nil
+}
+
+// Add a method to set the writers
+func (m *multiLogWriter) SetWriters(writers []io.Writer) {
+	m.writers = writers
+}
+
+func (l *Logger) Init(json bool, logFile string) {
+	var err error
 	l.logger = logrus.New()
 	l.logger.SetReportCaller(true)
 	l.logger.Out = os.Stdout
@@ -28,6 +55,14 @@ func (l *Logger) Init(json bool) {
 	} else {
 		l.logger.Formatter = &logrus.TextFormatter{}
 	}
+	// Create a custom formatter that writes to both stdout and a file
+	l.file, err = os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("Error opening log file:", err)
+	}
+	multiLogWriter := multiLogWriter{}
+	multiLogWriter.SetWriters([]io.Writer{os.Stdout, l.file})
+	l.logger.Out = multiLogWriter
 	l.logger.Info("Initializing Logger")
 }
 
@@ -45,6 +80,18 @@ func (l *Logger) Error(err error) {
 
 func (l *Logger) ErrorWithField(message, field, value string) {
 	l.logger.WithField(field, value).Error(message)
+}
+
+func (l *Logger) LogMessage(message notification.Message) {
+
+	l.logger.WithFields(logrus.Fields{
+		"buckets":  message.Buckets,
+		"title":    message.Title,
+		"body":     message.Body,
+		"source":   message.Server,
+		"link":     message.Link,
+		"metadata": message.Metadata,
+	}).Info("Logging message")
 }
 
 func (l *Logger) ProcessSendMessageResults(ids []string, errors []error) {

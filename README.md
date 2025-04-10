@@ -25,6 +25,26 @@ A simple API to receive data and send push notifications to multiple devices via
 -   Modify `config.yaml` and re-run
 -   Navigate to 127.0.0.1:<port> to install the Service Worker in Chrome to receive notifications
 
+#### Docker
+
+```
+docker build -t notifapi \
+  --build-arg DB_PATH=/app \
+  --build-arg DEV_MODE=true \
+  --build-arg INSTANCE_ID=xxx \
+  --build-arg LOG_PATH=/app/logs \
+  --build-arg PORT=8080 \
+  --build-arg SECRET_KEY=xxx \
+  --build-arg DISCORD_WEBHOOK=https://discord.com/api/webhooks/xxx/xxx .
+```
+
+```
+docker run -p 8080:8080 \
+  --name notifapi \
+  --hostname notifapi_docker \
+  notifapi
+```
+
 ### Client
 
 Example:
@@ -65,7 +85,7 @@ func (n *Notification) SendMessage(title, body string) error {
 
 ## Send a notification
 
-Send a POST request with the following JSON body:
+Send a POST request to `URL:PORT/api/notify` with the following JSON body:
 
 ```json
 {
@@ -80,6 +100,8 @@ Send a POST request with the following JSON body:
 }
 ```
 
+See `notifapi.http` for more details
+
 ## Roadmap
 
 -   Authentication (JWT)
@@ -87,3 +109,4 @@ Send a POST request with the following JSON body:
 -   Better documentation
 -   Better testing
 -   Docker images
+

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/coma-toast/notifapi/internal/utils"
+	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/disgo/webhook"
@@ -15,27 +16,22 @@ type Discord struct {
 	Data *utils.DataModel
 }
 
-func (d Discord) SendMessage(interests []string, title, body, source string) (string, error) {
-	return d.SendMessageFull(interests, title, body, "", source, nil)
+func (d Discord) SendMessage(payload notification.Message) (string, error) {
 
-}
-func (d Discord) SendMessageWithLink(interests []string, title, body, link, source string) (string, error) {
-	return d.SendMessageFull(interests, title, body, link, source, nil)
-}
-func (d Discord) SendMessageFull(interests []string, title, body, link, source string, metadata map[string]interface{}) (string, error) {
 	client, err := webhook.NewWithURL(d.URL)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	message := fmt.Sprintf("%s: %s - %s", source, title, body)
+	message := fmt.Sprintf("%s: %s - %s", payload.Server, payload.Title, payload.Body)
+	link := payload.Link
 
 	messageId, err := send(client, message, link)
 	if err != nil {
 		return "", err
 	}
 
-	d.Data.AddNotification(messageId, source, "discord", title, body, interests, metadata)
+	d.Data.AddNotification(payload)
 
 	return messageId, nil
 }
@@ -51,7 +47,7 @@ func send(client webhook.Client, payload string, url string) (string, error) {
 	}
 	results, err := client.CreateMessage(message, rest.WithDelay(0))
 	if err != nil {
-		log.Errorf("error sending message %d: %s", err)
+		log.Errorf("error sending message %d: %s", results.ID, err)
 		return "", err
 	}
 
