@@ -4,11 +4,11 @@ import (
 	"flag"
 	"os"
 
+	"github.com/coma-toast/notifapi/backend/pkg/api"
+	"github.com/coma-toast/notifapi/backend/pkg/app"
+	"github.com/coma-toast/notifapi/backend/pkg/discord" // Add this import statement
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/coma-toast/notifapi/internal/utils"
-	"github.com/coma-toast/notifapi/pkg/api"
-	"github.com/coma-toast/notifapi/pkg/app"
-	"github.com/coma-toast/notifapi/pkg/discord" // Add this import statement
-	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/ipinfo/go/v2/ipinfo"
 )
 

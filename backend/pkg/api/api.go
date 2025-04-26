@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coma-toast/notifapi/backend/pkg/app"
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/coma-toast/notifapi/internal/utils"
-	"github.com/coma-toast/notifapi/pkg/app"
-	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 	"github.com/ipinfo/go/v2/ipinfo"

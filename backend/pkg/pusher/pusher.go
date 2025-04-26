@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/coma-toast/notifapi/internal/utils"
-	"github.com/coma-toast/notifapi/pkg/notification"
 	pushnotifications "github.com/pusher/push-notifications-go"
 )
 

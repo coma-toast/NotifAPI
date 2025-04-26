@@ -1,8 +1,8 @@
 package app
 
 import (
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/coma-toast/notifapi/internal/utils"
-	"github.com/coma-toast/notifapi/pkg/notification"
 )
 
 type App struct {

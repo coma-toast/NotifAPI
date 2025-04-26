@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq" // PostgreSQL driver

@@ -1,0 +1,14 @@
+# .config/hera.yaml
+services:
+  backend:
+    command: go run .
+    watch:
+      - backend
+      - go.mod
+      - main.go
+    exclude:
+  frontend:
+    command: npm start
+    watch:
+      - frontend
+      - package.json

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 )
 
 type Client struct {

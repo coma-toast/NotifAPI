@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/sirupsen/logrus"
 )
 

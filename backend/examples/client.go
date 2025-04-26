@@ -3,8 +3,8 @@ package notifications
 import (
 	"fmt"
 
-	"github.com/coma-toast/notifapi/pkg/client"
-	"github.com/coma-toast/notifapi/pkg/notification"
+	"github.com/coma-toast/notifapi/backend/pkg/client"
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 )
 
 type Notification struct {

@@ -1,11 +1,23 @@
 {
     "compilerOptions": {
-        "outDir": "notifapi-react/public/static",
-        "module": "es2015",
+        "target": "es5",
+        "lib": ["dom", "dom.iterable", "esnext"],
+        "types": ["node"],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "module": "esnext",
         "moduleResolution": "node",
-        "target": "ES6",
-        "baseUrl": "notifapi-react/public/static",
-        "lib": ["ESNext", "DOM", "DOM.Iterable"]
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "outDir": "./public"
     },
-    "include": ["typescript/**/*", "typescript/service-worker2.ts"]
+    "files": ["src/service-worker.ts"],
+    "include": ["src", "src/static"]
 }

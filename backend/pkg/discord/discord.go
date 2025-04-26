@@ -3,8 +3,8 @@ package discord
 import (
 	"fmt"
 
+	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/coma-toast/notifapi/internal/utils"
-	"github.com/coma-toast/notifapi/pkg/notification"
 	"github.com/disgoorg/disgo/discord"
 	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/disgo/webhook"
