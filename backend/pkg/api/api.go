@@ -258,7 +258,8 @@ func (api *API) PingHandler(w http.ResponseWriter, r *http.Request) {
 		for _, e := range errors {
 			errorStrings = append(errorStrings, e.Error())
 		}
-		api.respondWithError(w, http.StatusInternalServerError, "error sending notification "+strings.Join(errorStrings, ","))
+		api.App.Logger.Error(fmt.Errorf("error sending notifications: %s", errorStrings))
+		api.respondWithError(w, http.StatusInternalServerError, "error sending notification")
 		return
 	}
 	api.respondWithJSON(w, 200, "Pong\n")

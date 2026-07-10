@@ -1,0 +1,23 @@
+{
+    "cSpell.words": [
+        "dbutton",
+        "instanceid",
+        "ipinfo",
+        "jmoiron",
+        "notifapi",
+        "ossp",
+        "Prettyfier",
+        "Signup"
+    ],
+    "[go]": {
+        "editor.defaultFormatter": "golang.go",
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "[*]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
+}

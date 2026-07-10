@@ -1,14 +1,15 @@
 # .config/hera.yaml
+enable_mouse_by_default: true
 services:
-  backend:
-    command: go run .
-    watch:
-      - backend
-      - go.mod
-      - main.go
-    exclude:
-  frontend:
-    command: npm start
-    watch:
-      - frontend
-      - package.json
+    backend:
+        command: go run .
+        watch:
+            - backend
+            - go.mod
+            - main.go
+        exclude:
+    frontend:
+        command: npm start
+        watch:
+            - frontend
+            - package.json

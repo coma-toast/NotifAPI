@@ -11,7 +11,6 @@ import (
 	"github.com/coma-toast/notifapi/backend/pkg/notification"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
-	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
 type DataModel struct {
@@ -22,7 +21,7 @@ type NotificationRow struct {
 	Date        string `db:"date" json:"date"`
 	Source      string `db:"source" json:"source"`
 	Destination string `db:"destination" json:"destination"`
-	Interests   string `db:"interests" json:"interests"`
+	Buckets     []int  `db:"buckets" json:"buckets"` // Changed from Interests to Buckets
 	Title       string `db:"title" json:"title"`
 	Message     string `db:"message" json:"message"`
 	Metadata    string `db:"metadata" json:"metadata"`
@@ -128,7 +127,7 @@ func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, e
 		bucketRow, err := d.GetBucketByName(bucket)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				result, err := d.AddBucket(BucketRow{
+				_, err := d.AddBucket(BucketRow{
 					Bucket:  bucket,
 					Webhook: payload.Link,
 					UserID:  payload.Server,
@@ -136,11 +135,15 @@ func (d *DataModel) AddNotification(payload notification.Message) (sql.Result, e
 				if err != nil {
 					return nil, fmt.Errorf("error adding bucket '%s': %v", bucket, err)
 				}
-				id, err := result.LastInsertId()
+
+				// Use RETURNING to get the ID of the inserted bucket
+				var newBucketID int
+				insertQuery := `INSERT INTO buckets (bucket, webhook, userid) VALUES ($1, $2, $3) RETURNING id`
+				err = d.DB.QueryRow(insertQuery, bucket, payload.Link, payload.Server).Scan(&newBucketID)
 				if err != nil {
-					return nil, fmt.Errorf("error getting last insert ID for bucket '%s': %v", bucket, err)
+					return nil, fmt.Errorf("error retrieving new bucket ID for '%s': %v", bucket, err)
 				}
-				bucketIDs[i] = int(id)
+				bucketIDs[i] = newBucketID
 			} else {
 				return nil, fmt.Errorf("error retrieving bucket '%s': %v", bucket, err)
 			}

@@ -1,23 +1,20 @@
 {
     "compilerOptions": {
-        "target": "es5",
-        "lib": ["dom", "dom.iterable", "esnext"],
-        "types": ["node"],
+        "target": "ES2020",
+        "module": "ESNext",
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
         "allowJs": true,
         "skipLibCheck": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "strict": true,
         "forceConsistentCasingInFileNames": true,
-        "noFallthroughCasesInSwitch": true,
-        "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "Node",
         "resolveJsonModule": true,
         "isolatedModules": true,
         "noEmit": true,
-        "jsx": "react-jsx",
-        "outDir": "./public"
+        "jsx": "react-jsx"
     },
-    "files": ["src/service-worker.ts"],
-    "include": ["src", "src/static"]
+    "include": ["frontend/src"],
+    "exclude": ["node_modules", "build", "dist"]
 }

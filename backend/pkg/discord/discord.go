@@ -47,7 +47,7 @@ func send(client webhook.Client, payload string, url string) (string, error) {
 	}
 	results, err := client.CreateMessage(message, rest.WithDelay(0))
 	if err != nil {
-		log.Errorf("error sending message %d: %s", results.ID, err)
+		log.Errorf("error sending message: %s", err)
 		return "", err
 	}
 
