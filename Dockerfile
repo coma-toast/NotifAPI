@@ -1,35 +1,45 @@
-FROM golang:latest
-
-ARG NAME=${NAME}
-ENV NAME=${NAME}
-ARG DB_PATH=${DB_PATH}
-ENV DB_PATH=${DB_PATH}
-ARG DEV_MODE=${DEV_MODE}
-ENV DEV_MODE=${DEV_MODE}
-ARG INSTANCE_ID=${INSTANCE_ID}
-ENV INSTANCE_ID=${INSTANCE_ID}
-ARG LOG_PATH=${LOG_PATH}
-ENV LOG_PATH=${LOG_PATH}
-ARG PORT=${PORT}
-ENV PORT=${PORT}
-ARG SECRET_KEY=${SECRET_KEY}
-ENV SECRET_KEY=${SECRET_KEY}
-ARG DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
-ENV DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
+# Build stage
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
 
-# Copy go.mod and go.sum files first to cache dependencies
+# Install build dependencies
+RUN apk add --no-cache git make
+
+# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy source code
 COPY . .
 
-RUN go build -o /app/notifapi
+# Build frontend
+RUN apk add --no-cache nodejs npm && \
+    cd frontend && npm install && npm run build
 
-COPY create_config.sh /app/create_config.sh
-RUN chmod +x /app/create_config.sh
-RUN /app/create_config.sh
+# Build Go binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o notifapi .
 
-CMD ["/app/notifapi"]
-EXPOSE ${PORT}
+# Final stage
+FROM alpine:3.20
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates wget tzdata
+
+# Create non-root user
+RUN adduser -D -g '' appuser
+
+# Copy binary and frontend build
+COPY --from=builder /app/notifapi .
+COPY --from=builder /app/frontend/dist ./frontend/dist
+
+# Create logs directory
+RUN mkdir -p logs && chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 10887
+
+CMD ["./notifapi"]

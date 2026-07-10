@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -31,6 +32,13 @@ func GetConf(path string) *Config {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
+
+	// Read environment variables with NOTIF_API_ prefix
+	viper.SetEnvPrefix("NOTIF_API")
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+
+	// Defaults
 	viper.SetDefault("Name", "")
 	viper.SetDefault("LogFilePath", "./logs/")
 	viper.SetDefault("PostgresHost", "localhost")
@@ -39,20 +47,17 @@ func GetConf(path string) *Config {
 	viper.SetDefault("PostgresDB", "postgres")
 	viper.SetDefault("PostgresPass", "")
 	viper.SetDefault("InstanceID", "")
-	viper.SetDefault("IpInfoToken", "")
+	viper.SetDefault("IPInfoToken", "")
 	viper.SetDefault("SecretKey", "")
 	viper.SetDefault("DiscordWebhook", "")
-	viper.SetDefault("Port", "")
+	viper.SetDefault("Port", "10887")
+	viper.SetDefault("JWTKey", "")
 	viper.SetDefault("DevMode", false)
 
+	// Read config file (optional - env vars take precedence)
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			viper.Unmarshal(&Config{})
-			err = viper.SafeWriteConfig()
-			if err != nil {
-				log.Fatalln("Error writing config", err)
-			}
-
+			log.Println("Config file not found, using environment variables and defaults")
 		} else {
 			log.Fatalf("Error reading config: %v", err)
 		}
@@ -70,8 +75,8 @@ func GetConf(path string) *Config {
 	}
 
 	if conf.InstanceID == "" {
-		fmt.Println("Please fill out configuration values in config.yaml")
-		os.Exit(0)
+		fmt.Println("InstanceID is required. Set NOTIF_API_INSTANCEID environment variable.")
+		os.Exit(1)
 	}
 
 	return conf
